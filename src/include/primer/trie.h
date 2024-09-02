@@ -11,6 +11,7 @@
 #include <unordered_map>
 #include <utility>
 #include <vector>
+#include <stack>
 
 namespace bustub {
 
@@ -70,6 +71,14 @@ class TrieNode {
 
   // You can add additional fields and methods here except storing children. But in general, you don't need to add extra
   // fields to complete this project.
+  bool HasChild(const char &key_) const {
+    return children_.find(key_) != children_.end();
+  }
+
+  std::shared_ptr<const TrieNode> GetChildNode(const char &key_) const {
+    if(!HasChild(key_)) return nullptr;
+    return children_.find(key_)->second;
+  }
 };
 
 // A TrieNodeWithValue is a TrieNode that also has a value of type T associated with it.
