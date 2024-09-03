@@ -17,8 +17,42 @@
 
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
+#include "execution/executors/nested_loop_join_executor.h"
+#include "common/util/hash_util.h"
 #include "execution/plans/hash_join_plan.h"
 #include "storage/table/tuple.h"
+
+namespace bustub {
+
+  struct HashJoinKey {
+    std::vector<Value> values_;
+
+    auto operator==(const HashJoinKey &other) const -> bool {
+      for (uint32_t i = 0; i < other.values_.size(); i++) {
+        if (values_[i].CompareEquals(other.values_[i]) != CmpBool::CmpTrue) {
+          return false;
+        }
+      }
+      return true;
+    }
+  };
+
+}  // namespace bustub
+
+namespace std {
+  template <>
+  struct hash<bustub::HashJoinKey> {
+    auto operator()(const bustub::HashJoinKey &hash_join_key) const -> std::size_t {
+      size_t curr_hash = 0;
+      for (const auto &key : hash_join_key.values_) {
+        if (!key.IsNull()) {
+          curr_hash = bustub::HashUtil::CombineHashes(curr_hash, bustub::HashUtil::HashValue(&key));
+        }
+      }
+      return curr_hash;
+    }
+  };
+}  // namespace std
 
 namespace bustub {
 
@@ -51,9 +85,22 @@ class HashJoinExecutor : public AbstractExecutor {
   /** @return The output schema for the join */
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); };
 
+  auto GetLeftJoinKey(const Tuple &tuple) -> HashJoinKey;
+
+  auto GetRightJoinKey(const Tuple &tuple) -> HashJoinKey;
+
+  auto InnerJoinTuple(const Tuple *left_tuple, const Tuple *right_tuple) -> Tuple;
+
+  auto LeftJoinTuple(const Tuple *left_tuple) -> Tuple;
+
  private:
   /** The HashJoin plan node to be executed. */
   const HashJoinPlanNode *plan_;
+  std::unique_ptr<AbstractExecutor> left_executor_;
+  std::unique_ptr<AbstractExecutor> right_executor_;
+  std::unordered_map<HashJoinKey, std::queue<Tuple>> hash_table_;
+  std::queue<Tuple> queue_;
+  Tuple left_tuple_;
 };
 
 }  // namespace bustub
