@@ -16,6 +16,7 @@
 
 #include "common/rid.h"
 #include "execution/executor_context.h"
+#include "execution/expressions/constant_value_expression.h"
 #include "execution/executors/abstract_executor.h"
 #include "execution/plans/index_scan_plan.h"
 #include "storage/table/tuple.h"
@@ -44,5 +45,7 @@ class IndexScanExecutor : public AbstractExecutor {
  private:
   /** The index scan plan node to be executed. */
   const IndexScanPlanNode *plan_;
+  std::vector<RID> rids_;
+  std::vector<RID>::iterator rids_iter_;
 };
 }  // namespace bustub
