@@ -18,11 +18,37 @@ namespace bustub {
 
 AggregationExecutor::AggregationExecutor(ExecutorContext *exec_ctx, const AggregationPlanNode *plan,
                                          std::unique_ptr<AbstractExecutor> &&child_executor)
-    : AbstractExecutor(exec_ctx) {}
+    : AbstractExecutor(exec_ctx),
+      plan_(plan),
+      child_executor_(std::move(child_executor)),
+      aht_(plan_->GetAggregates(), plan_->GetAggregateTypes()),
+      aht_iterator_(aht_.Begin()) {}
 
-void AggregationExecutor::Init() {}
+void AggregationExecutor::Init() {
+    child_executor_->Init();
+    aht_.Clear();
 
-auto AggregationExecutor::Next(Tuple *tuple, RID *rid) -> bool { return false; }
+    Tuple child_tuple{};
+    RID rid = RID{};
+    while(child_executor_->Next(&child_tuple, &rid)) {
+        aht_.InsertCombine(MakeAggregateKey(&child_tuple), MakeAggregateValue(&child_tuple));
+    }
+    if(aht_.Size() == 0 && plan_->group_bys_.empty()) {
+        aht_.InsertDefaultValue();
+    }
+    aht_iterator_ = aht_.Begin();
+}
+
+auto AggregationExecutor::Next(Tuple *tuple, RID *rid) -> bool { 
+    if (aht_iterator_ == aht_.End()) return false;
+    std::vector<Value> values;
+    values.insert(values.end(), aht_iterator_.Key().group_bys_.begin(), aht_iterator_.Key().group_bys_.end());
+    values.insert(values.end(), aht_iterator_.Val().aggregates_.begin(), aht_iterator_.Val().aggregates_.end());
+    *tuple = Tuple(values, &GetOutputSchema());
+    *rid = tuple->GetRid();
+    ++aht_iterator_;
+    return true; 
+}
 
 auto AggregationExecutor::GetChildExecutor() const -> const AbstractExecutor * { return child_executor_.get(); }
 
