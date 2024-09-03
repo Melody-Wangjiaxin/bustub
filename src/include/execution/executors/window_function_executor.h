@@ -17,7 +17,9 @@
 
 #include "execution/executor_context.h"
 #include "execution/executors/abstract_executor.h"
+#include "execution/plans/aggregation_plan.h"
 #include "execution/plans/window_plan.h"
+#include "type/value_factory.h"
 #include "storage/table/tuple.h"
 
 namespace bustub {
@@ -85,10 +87,16 @@ class WindowFunctionExecutor : public AbstractExecutor {
   auto GetOutputSchema() const -> const Schema & override { return plan_->OutputSchema(); }
 
  private:
+  auto Equal(Tuple *a, Tuple *b, const std::vector<std::pair<OrderByType, AbstractExpressionRef>> &order_bys) -> bool;
+
+  void InsertCombin(WindowFunctionType window_func_type, Value &aggregate_value, Value &input_value);
+
   /** The window aggregation plan node to be executed */
   const WindowFunctionPlanNode *plan_;
 
   /** The child executor from which tuples are obtained */
   std::unique_ptr<AbstractExecutor> child_executor_;
+  std::vector<Tuple> tuples_;
+  std::vector<Tuple>::iterator tuple_iter_;
 };
 }  // namespace bustub
