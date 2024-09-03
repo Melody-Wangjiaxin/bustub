@@ -20,8 +20,9 @@ void ExtendibleHTableHeaderPage::Init(uint32_t max_depth) {
   // throw NotImplementedException("ExtendibleHTableHeaderPage is not implemented");
   if(max_depth > HTABLE_HEADER_MAX_DEPTH) throw Exception("Max_depth is too large!");
   max_depth_ = max_depth;
-  for(auto i = 0; i < (1 << max_depth_); i++) {
-    directory_page_ids_[i] = 0;
+  uint32_t max_sz = MaxSize();
+  for (uint32_t i = 0; i < max_sz; ++i) {
+    SetDirectoryPageId(i, INVALID_PAGE_ID);
   }
 }
 

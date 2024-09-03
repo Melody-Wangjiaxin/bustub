@@ -48,25 +48,33 @@ auto ExtendibleHTableBucketPage<K, V, KC>::Lookup(const K &key, V &value, const 
 
 template <typename K, typename V, typename KC>
 auto ExtendibleHTableBucketPage<K, V, KC>::Insert(const K &key, const V &value, const KC &cmp) -> bool {
-  if(this->IsFull()) return false;
-  uint32_t l = 0;
-  uint32_t r = size_ - 1;
-  if(size_ > 0) {
-    while(l < r) {
+  if (this->IsFull()) {
+    return false;
+  }
+  if (size_ == 0U) {
+    array_[0] = std::make_pair(key, value);
+  } else {
+    uint32_t l = 0;
+    uint32_t r = size_ - 1;
+    while (l < r) {
       uint32_t mid = (l + r) / 2;
-      if(cmp(KeyAt(mid), key) < 0) {
+      if (cmp(KeyAt(mid), key) < 0) {
         l = mid + 1;
       } else {
         r = mid;
       }
     }
-    if(!cmp(KeyAt(l), key)) return false;
-    if(cmp(KeyAt(l), key) < 0) l++;
-    for(auto j = size_ - 1; j >= l; j--) {
-      array_[j + 1] = array_[j];
+    if (!cmp(KeyAt(l), key)) {
+      return false;
     }
+    if (cmp(KeyAt(l), key) < 0) {
+      l++;
+    }
+    for (uint32_t i = size_; i > l; --i) {
+      array_[i] = array_[i - 1];
+    }
+    array_[l] = std::make_pair(key, value);
   }
-  array_[l] = std::make_pair(key, value);
   size_++;
   return true;
 }
@@ -122,6 +130,11 @@ auto ExtendibleHTableBucketPage<K, V, KC>::IsFull() const -> bool {
 template <typename K, typename V, typename KC>
 auto ExtendibleHTableBucketPage<K, V, KC>::IsEmpty() const -> bool {
   return (size_ == 0);
+}
+
+template <typename K, typename V, typename KC>
+void ExtendibleHTableBucketPage<K, V, KC>::Clear() {
+  size_ = 0;
 }
 
 template class ExtendibleHTableBucketPage<int, int, IntComparator>;

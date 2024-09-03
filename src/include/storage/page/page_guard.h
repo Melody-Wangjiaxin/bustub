@@ -85,8 +85,15 @@ class BasicPageGuard {
 
   auto PageId() -> page_id_t { return page_->GetPageId(); }
 
-  auto GetData() -> const char * { return page_->GetData(); }
+  auto GetData() -> const char * { 
+    if (page_ == nullptr) {
+      return nullptr;
+    }
+    return page_->GetData(); 
+  }
 
+  auto IsEmpty() -> bool;
+  
   template <class T>
   auto As() -> const T * {
     return reinterpret_cast<const T *>(GetData());
@@ -114,8 +121,7 @@ class BasicPageGuard {
 class ReadPageGuard {
  public:
   ReadPageGuard() = default;
-  ReadPageGuard(BufferPoolManager *bpm, Page *page);
-
+  ReadPageGuard(BufferPoolManager *bpm, Page *page) : guard_(bpm, page) {}
   ReadPageGuard(const ReadPageGuard &) = delete;
   auto operator=(const ReadPageGuard &) -> ReadPageGuard & = delete;
 
@@ -162,6 +168,8 @@ class ReadPageGuard {
 
   auto GetData() -> const char * { return guard_.GetData(); }
 
+  auto IsEmpty() -> bool;
+
   template <class T>
   auto As() -> const T * {
     return guard_.As<T>();
@@ -175,7 +183,7 @@ class ReadPageGuard {
 class WritePageGuard {
  public:
   WritePageGuard() = default;
-  WritePageGuard(BufferPoolManager *bpm, Page *page);
+  WritePageGuard(BufferPoolManager *bpm, Page *page) : guard_(bpm, page) {}
   WritePageGuard(const WritePageGuard &) = delete;
   auto operator=(const WritePageGuard &) -> WritePageGuard & = delete;
 
@@ -221,6 +229,8 @@ class WritePageGuard {
   auto PageId() -> page_id_t { return guard_.PageId(); }
 
   auto GetData() -> const char * { return guard_.GetData(); }
+
+  auto IsEmpty() -> bool;
 
   template <class T>
   auto As() -> const T * {
